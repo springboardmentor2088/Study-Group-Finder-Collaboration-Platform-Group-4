@@ -90,9 +90,11 @@ export const userAPI = {
     });
 
     console.log('🌐 API: Profile response status:', response.status);
-    
+
     if (!response.ok) {
-      throw new Error('Failed to fetch user profile');
+      const errorText = await response.text().catch(() => '');
+      console.error('🌐 API: Profile fetch failed body:', errorText);
+      throw new Error(`Failed to fetch user profile${errorText ? `: ${response.status} ${errorText}` : ''}`);
     }
 
     const userData = await response.json();
@@ -101,58 +103,8 @@ export const userAPI = {
   },
 };
 
-export const groupAPI = {
-  getAllGroups: async (token: string) => {
-    const response = await fetch(`${API_BASE_URL}/groups`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const message = await response.text();
-      throw new Error(message || 'Failed to fetch groups');
-    }
-
-    return response.json();
-  },
-
-  joinGroup: async (token: string, groupId: number) => {
-    const response = await fetch(`${API_BASE_URL}/groups/${groupId}/join`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const message = await response.text();
-      throw new Error(message || 'Failed to join group');
-    }
-
-    return response.json();
-  },
-
-  leaveGroup: async (token: string, groupId: number) => {
-    const response = await fetch(`${API_BASE_URL}/groups/${groupId}/leave`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const message = await response.text();
-      throw new Error(message || 'Failed to leave group');
-    }
-
-    return response.json();
-  },
-};
+// Re-export the canonical groupAPI implementation (keeps group endpoints in one place)
+export { groupAPI } from '@/lib/api/groupApi';
 
 export const tokenService = {
   getToken: (): string | null => localStorage.getItem('token'),
