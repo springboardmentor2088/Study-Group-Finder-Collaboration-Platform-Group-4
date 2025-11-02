@@ -104,40 +104,8 @@ export const userAPI = {
   },
 };
 
-// ----------------------------- HELP CHAT API -----------------------------
-export const helpChatApi = {
-  saveInteraction: async (interactionData: {
-    question: string;
-    sessionId: string;
-    type: string;
-    userAgent?: string;
-    pageContext?: string;
-  }) => {
-    const response = await fetch(`${API_BASE_URL}/help-chat/interactions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
-      body: JSON.stringify(interactionData)
-    });
-    return response.json();
-  },
-
-  getAnalytics: async () => {
-    const response = await fetch(`${API_BASE_URL}/help-chat/interactions/analytics`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    });
-    return response.json();
-  },
-
-  getCommonQuestions: async () => {
-    const response = await fetch(`${API_BASE_URL}/help-chat/common-questions`);
-    return response.json();
-  }
-};
+// Re-export the canonical groupAPI implementation (keeps group endpoints in one place)
+export { groupAPI } from '@/lib/api/groupApi';
 
 
 // ----------------------------- GROUP API -----------------------------
