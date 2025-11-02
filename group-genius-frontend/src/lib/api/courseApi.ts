@@ -2,11 +2,19 @@ import { Course, UserCourse, CoursePeer, CoursePeersResponse } from '@/types/cou
 
 const API_BASE = 'http://localhost:8080/api';
 
-// Helper function to get current user ID (you'll need to implement this based on your auth system)
+// Helper function to get current user ID from localStorage or context
 const getCurrentUserId = (): number | null => {
-  // This should return the current logged-in user's ID
-  // For now, we'll use a hardcoded ID for testing
-  return 1; // Replace with actual auth logic
+  // Try to get user ID from localStorage first
+  const userData = localStorage.getItem('user');
+  if (userData) {
+    try {
+      const user = JSON.parse(userData);
+      return user.id || null;
+    } catch (error) {
+      console.error('Error parsing user data from localStorage:', error);
+    }
+  }
+  return null;
 };
 
 export const courseApi = {
@@ -74,15 +82,30 @@ export const courseApi = {
   // Get user's enrolled courses
   async getUserCourses(): Promise<UserCourse[]> {
     const userId = getCurrentUserId();
+    console.log('🔍 Getting user courses for userId:', userId);
+    
     if (!userId) {
       throw new Error('User not authenticated');
     }
-
-    const response = await fetch(`${API_BASE}/user/courses?userId=${userId}`);
+    const url = `${API_BASE}/user/courses?userId=${userId}`;
+    console.log('🔍 Fetching from URL:', url);
+    const token = localStorage.getItem('token');
+    const response = await fetch(url, {
+      headers: {
+        Authorization: token ? `Bearer ${token}` : '',
+      },
+    });
+    console.log('🔍 Response status:', response.status);
+    
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Failed to fetch user courses:', errorText);
       throw new Error('Failed to fetch user courses');
     }
-    return response.json();
+    
+    const data = await response.json();
+    console.log('✅ User courses data:', data);
+    return data;
   },
 
   // Enroll in a course
@@ -92,10 +115,12 @@ export const courseApi = {
       throw new Error('User not authenticated');
     }
 
+    const token = localStorage.getItem('token');
     const response = await fetch(`${API_BASE}/user/courses/${courseId}/enroll?userId=${userId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        Authorization: token ? `Bearer ${token}` : '',
       },
     });
 
@@ -113,8 +138,12 @@ export const courseApi = {
       throw new Error('User not authenticated');
     }
 
+    const token = localStorage.getItem('token');
     const response = await fetch(`${API_BASE}/user/courses/${courseId}?userId=${userId}`, {
       method: 'DELETE',
+      headers: {
+        Authorization: token ? `Bearer ${token}` : '',
+      },
     });
 
     if (!response.ok) {
@@ -130,7 +159,12 @@ export const courseApi = {
       throw new Error('User not authenticated');
     }
 
-    const response = await fetch(`${API_BASE}/user/courses/peers?courseId=${courseId}&userId=${userId}`);
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE}/user/courses/peers?courseId=${courseId}&userId=${userId}`, {
+      headers: {
+        Authorization: token ? `Bearer ${token}` : '',
+      },
+    });
     if (!response.ok) {
       throw new Error('Failed to fetch course peers');
     }

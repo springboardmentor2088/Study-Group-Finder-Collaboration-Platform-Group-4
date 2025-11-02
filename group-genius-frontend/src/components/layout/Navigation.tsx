@@ -17,8 +17,8 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const navigationItems = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Groups', href: '/groups', icon: Users },
   { name: 'Courses', href: '/courses', icon: BookOpen },
+  { name: 'Groups', href: '/groups', icon: Users },
   { name: 'Chat', href: '/chat', icon: MessageCircle },
   { name: 'Calendar', href: '/calendar', icon: Calendar },
   { name: 'Profile', href: '/profile', icon: User },
@@ -29,6 +29,21 @@ export function Navigation() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
   const { user, logout } = useAuth();
+
+  const displayName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '';
+  const initials = user ? `${user.firstName?.charAt(0) ?? ''}${user.lastName?.charAt(0) ?? ''}`.toUpperCase() : '';
+  // Build image src: prefer `avatar` then `profileImageUrl`. If value is a full URL, use it as-is.
+  const rawImageValue = user?.avatar || user?.profileImageUrl || undefined;
+  let imageSrc: string | undefined = undefined;
+  if (rawImageValue) {
+    if (rawImageValue.startsWith('http://') || rawImageValue.startsWith('https://')) {
+      imageSrc = rawImageValue;
+    } else {
+      // Backend stores path or filename; follow same pattern as Profile.tsx
+      const filename = rawImageValue.split('/').pop();
+      imageSrc = filename ? `http://localhost:8080/api/files/${filename}` : undefined;
+    }
+  }
 
   // Create dynamic menu items with user-specific dashboard URL
   const getDynamicMenuItems = () => {
@@ -110,7 +125,19 @@ export function Navigation() {
             <Bell className="w-5 h-5" />
             <div className="absolute -top-1 -right-1 w-3 h-3 bg-accent rounded-full" />
           </Button>
-          <Button variant="outline" onClick={logout}>Sign Out</Button>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              {imageSrc ? (
+                <img src={imageSrc} alt="Profile" className="w-8 h-8 rounded-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-medium">
+                  {initials}
+                </div>
+              )}
+              <span className="text-sm font-medium">{displayName}</span>
+            </div>
+            <Button variant="outline" onClick={logout}>Sign Out</Button>
+          </div>
         </div>
       </nav>
 
@@ -124,7 +151,7 @@ export function Navigation() {
             <span className="text-xl font-bold text-foreground">GroupGenius</span>
           </Link>
           
-          <div className="flex items-center space-x-2">
+    <div className="flex-1 flex items-center justify-end space-x-2">
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="w-5 h-5" />
               <div className="absolute -top-1 -right-1 w-2 h-2 bg-accent rounded-full" />
@@ -172,28 +199,8 @@ export function Navigation() {
         )}
       </nav>
 
-      {/* Bottom Navigation for Mobile */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50">
-        <div className="flex items-center justify-around py-2">
-          {menuItems.slice(0, 5).map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={`flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors ${
-                  isActive(item.href)
-                    ? 'text-primary'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Icon className="w-5 h-5" />
-                <span className="text-xs font-medium">{item.name}</span>
-              </Link>
-            );
-          })}
-        </div>
-      </div>
+      {/* Bottom Navigation for Mobile (hidden when hideBottomNav=true) */}
+      {/* Bottom navigation removed — mobile menu (burger) is used instead */}
     </>
   );
 }
