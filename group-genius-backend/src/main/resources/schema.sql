@@ -19,6 +19,8 @@ CREATE TABLE IF NOT EXISTS users (
 
 
 CREATE TABLE IF NOT EXISTS courses (
+
+CREATE TABLE IF NOT EXISTS courses (
   id BIGINT NOT NULL AUTO_INCREMENT,
   course_code VARCHAR(20) NOT NULL,
   course_name VARCHAR(100) NOT NULL,
@@ -28,6 +30,7 @@ CREATE TABLE IF NOT EXISTS courses (
   UNIQUE KEY UK_courses_code (course_code)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+CREATE TABLE IF NOT EXISTS user_courses (
 CREATE TABLE IF NOT EXISTS user_courses (
   user_id BIGINT NOT NULL,
   course_id BIGINT NOT NULL,
