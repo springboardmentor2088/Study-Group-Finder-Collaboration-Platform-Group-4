@@ -929,6 +929,9 @@ export default function Groups() {
               <div>
                 <h3 className="text-sm font-semibold text-destructive">Unable to load study groups</h3>
                 <p className="text-sm text-muted-foreground">{error}</p>
+                <div className="mt-3">
+                  <Button onClick={() => fetchGroups()}>Retry</Button>
+                </div>
               </div>
             </CardContent>
           </Card>

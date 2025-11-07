@@ -4,6 +4,7 @@ const API_BASE_URL = 'http://localhost:8080/api';
 
 export const groupAPI = {
   // Search/Get all groups with filters
+  
   searchGroups: async (token: string, params?: GroupSearchParams) => {
     const queryParams = new URLSearchParams();
     if (params?.courseId) queryParams.append('courseId', params.courseId.toString());
