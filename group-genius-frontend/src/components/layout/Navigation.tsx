@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { 
@@ -14,6 +14,9 @@ import {
   Mail
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { NotificationViewer } from '@/components/common/NotificationViewer';
+import { notificationAPI } from '@/lib/api/notificationApi';
+import { resolveMediaUrl } from '@/lib/media';
 
 const navigationItems = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -27,23 +30,43 @@ const navigationItems = [
 
 export function Navigation() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isNotificationViewerOpen, setIsNotificationViewerOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const location = useLocation();
   const { user, logout } = useAuth();
+
+  // Load unread notification count
+  useEffect(() => {
+    if (user?.id) {
+      loadUnreadCount();
+      // Poll for new notifications every 30 seconds
+      const interval = setInterval(loadUnreadCount, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user?.id]);
+
+  const loadUnreadCount = async () => {
+    if (!user?.id) return;
+    try {
+      const notifications = await notificationAPI.getUserNotifications(user.id);
+      setUnreadCount(notifications.filter(n => !n.read).length);
+    } catch (error) {
+      console.error('Error loading notification count:', error);
+    }
+  };
+
+  const handleNotificationClick = () => {
+    setIsNotificationViewerOpen(!isNotificationViewerOpen);
+    if (!isNotificationViewerOpen) {
+      loadUnreadCount();
+    }
+  };
 
   const displayName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '';
   const initials = user ? `${user.firstName?.charAt(0) ?? ''}${user.lastName?.charAt(0) ?? ''}`.toUpperCase() : '';
   // Build image src: prefer `avatar` then `profileImageUrl`. If value is a full URL, use it as-is.
   const rawImageValue = user?.avatar || user?.profileImageUrl || undefined;
-  let imageSrc: string | undefined = undefined;
-  if (rawImageValue) {
-    if (rawImageValue.startsWith('http://') || rawImageValue.startsWith('https://')) {
-      imageSrc = rawImageValue;
-    } else {
-      // Backend stores path or filename; follow same pattern as Profile.tsx
-      const filename = rawImageValue.split('/').pop();
-      imageSrc = filename ? `http://localhost:8080/api/files/${filename}` : undefined;
-    }
-  }
+  const imageSrc = resolveMediaUrl(rawImageValue) ?? undefined;
 
   // Create dynamic menu items with user-specific dashboard URL
   const getDynamicMenuItems = () => {
@@ -67,7 +90,8 @@ export function Navigation() {
 
   if (!user) {
     return (
-      <nav className="flex items-center justify-between px-6 py-4 bg-card border-b border-border">
+      <>
+      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 bg-card/95 supports-[backdrop-filter]:bg-card/80 backdrop-blur border-b border-border">
         <Link to="/" className="flex items-center space-x-2">
           <div className="w-8 h-8 bg-gradient-academic rounded-lg flex items-center justify-center">
             <BookOpen className="w-5 h-5 text-white" />
@@ -84,13 +108,16 @@ export function Navigation() {
           </Button>
         </div>
       </nav>
+      {/* Spacer to offset fixed header height */}
+      <div className="h-14 lg:h-16" aria-hidden />
+      </>
     );
   }
 
   return (
     <>
       {/* Desktop Navigation */}
-      <nav className="hidden lg:flex items-center justify-between px-6 py-4 bg-card border-b border-border">
+      <nav className="hidden lg:flex fixed top-0 left-0 right-0 z-50 items-center justify-between px-6 py-4 bg-card/95 supports-[backdrop-filter]:bg-card/80 backdrop-blur border-b border-border">
         <div className="flex items-center space-x-8">
           <Link to="/" className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-gradient-academic rounded-lg flex items-center justify-center">
@@ -121,9 +148,18 @@ export function Navigation() {
         </div>
 
         <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="icon" className="relative">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="relative"
+            onClick={handleNotificationClick}
+          >
             <Bell className="w-5 h-5" />
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-accent rounded-full" />
+            {unreadCount > 0 && (
+              <div className="absolute -top-1 -right-1 min-w-[1.25rem] h-5 bg-red-500 text-white text-xs font-medium rounded-full flex items-center justify-center px-1">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </div>
+            )}
           </Button>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
@@ -142,7 +178,7 @@ export function Navigation() {
       </nav>
 
       {/* Mobile Navigation */}
-      <nav className="lg:hidden bg-card border-b border-border">
+      <nav className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-card/95 supports-[backdrop-filter]:bg-card/80 backdrop-blur border-b border-border">
         <div className="flex items-center justify-between px-4 py-3">
           <Link to="/" className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-gradient-academic rounded-lg flex items-center justify-center">
@@ -152,9 +188,18 @@ export function Navigation() {
           </Link>
           
     <div className="flex-1 flex items-center justify-end space-x-2">
-            <Button variant="ghost" size="icon" className="relative">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="relative"
+              onClick={handleNotificationClick}
+            >
               <Bell className="w-5 h-5" />
-              <div className="absolute -top-1 -right-1 w-2 h-2 bg-accent rounded-full" />
+              {unreadCount > 0 && (
+                <div className="absolute -top-1 -right-1 min-w-[1.25rem] h-5 bg-red-500 text-white text-xs font-medium rounded-full flex items-center justify-center px-1">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </div>
+              )}
             </Button>
             <Button
               variant="ghost"
@@ -199,8 +244,20 @@ export function Navigation() {
         )}
       </nav>
 
+      {/* Spacer to offset fixed header height */}
+      <div className="h-14 lg:h-16" aria-hidden />
+
       {/* Bottom Navigation for Mobile (hidden when hideBottomNav=true) */}
       {/* Bottom navigation removed — mobile menu (burger) is used instead */}
+
+      {/* Notification Viewer */}
+      <NotificationViewer
+        isOpen={isNotificationViewerOpen}
+        onClose={() => {
+          setIsNotificationViewerOpen(false);
+          loadUnreadCount();
+        }}
+      />
     </>
   );
 }
